@@ -1,0 +1,21 @@
+# gstreamer setup
+brew install gstreamer
+
+brew search gst-plugins
+brew install gst-plugins-base
+brew install gst-plugins-good
+brew install gst-plugins-bad
+brew install gst-plugins-ugly # if you want to experiment on things that are still under development 
+# if any of the above install has an issue with `world writable but not sticky error` then execute chmod +t /tmp
+
+wget http://gstreamer.freedesktop.org/src/gst-libav/gst-libav-1.8.2.tar.xz
+
+tar -xvf gst-libav-1.8.2.tar.xz
+
+# needs --prefix=/usr/local for osx 11 mac
+
+./configure --prefix=/usr \
+            --with-package-name="GStreamer Libav Plugins 1.8.2 BLFS" \
+            --with-package-origin="http://www.linuxfromscratch.org/blfs/view/svn/" &&
+make
+sudo make install
