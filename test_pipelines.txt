@@ -1,0 +1,27 @@
+Basic demux
+
+gst-launch-1.0 \
+https://b.fssta.com/hm-api/manifest/index.m3u8\?video_host\=b.fssta.com\&content_filter\=%7B%22player%22:%5B115685%5D%7D\&business_rules\=fox_world_cup\&asset_filter\=%7B%22year%22:%5B2018%5D%7D\&pkg_level\=720 \
+! hlsdemux ! filesink location=onlydemux.ts
+
+
+#record from webcam
+gst-launch-1.0 autovideosrc device=/dev/video0 ! videoconvert ! x264enc ! mp4mux ! filesink location=xyz.mp4
+
+
+# record from webcam
+gst-launch-1.0 -v autovideosrc device=/dev/video0 ! x264enc ! filesink location=test_1.mp4
+
+
+#### mbappe
+ https://b.fssta.com/hm-api/manifest/index.m3u8?video_host=b.fssta.com&content_filter=%7B%22plays%22:%5B%22goal%22%5D,%22player%22:%5B115570%5D%7D&business_rules=fox_world_cup&asset_filter=%7B%22year%22:%5B2018%5D%7D&pkg_level=720
+
+ ####
+
+# testing 1
+# step one.. see video
+gst-launch-1.0 -v souphttpsrc location=<HLS_URL> ! hlsdemux ! decodebin name=decoder ! queue ! autovideosink decoder. ! queue ! autoaudiosink
+
+# step 2.. save the video
+
+# , 175272, 175278, 175290, 195926
