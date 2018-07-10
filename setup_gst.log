@@ -19,3 +19,6 @@ tar -xvf gst-libav-1.8.2.tar.xz
             --with-package-origin="http://www.linuxfromscratch.org/blfs/view/svn/" &&
 make
 sudo make install
+
+# in order to install voaacenc encoder in mac
+brew reinstall gst-plugins-bad --with-libvo-aacenc
