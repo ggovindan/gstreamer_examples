@@ -4,7 +4,7 @@ using namespace std;
 
 static GMainLoop *loop;
 static GstBus *bus;
-static GstElement *pipeline, *source, *hlsdemux, *decodebin, *queue1, *queue2, *autovideosink, *autoaudiosink, *file_sink;
+static GstElement *pipeline, *source, *hlsdemux, *decodebin, *queue1, *videoconvert, *x264enc, *audioconvert, *mpegtsmux, *voaacenc, *file_sink;
 
 static gboolean
 message_cb (GstBus * bus, GstMessage * message, gpointer user_data)
@@ -94,16 +94,17 @@ int main(int argc, char *argv[]) {
     gst_init(&argc, &argv);
     pipeline = gst_pipeline_new ("pipeline");
     source = gst_element_factory_make ("souphttpsrc", "source");
-    hlsdemux = gst_element_factory_make ("hlsdemux", "hlsdemux");
     decodebin = gst_element_factory_make ("decodebin", "decodebin");
     queue1 = gst_element_factory_make ("queue", "queue1");
-    queue2 = gst_element_factory_make ("queue", "queue2");
-    autovideosink = gst_element_factory_make ("autovideosink", "autovideosink");
-    autoaudiosink = gst_element_factory_make ("autoaudiosink", "autoaudiosink");
+    videoconvert = gst_element_factory_make("videoconvert", "videoconvert");
+    x264enc = gst_element_factory_make("x264enc", "x264enc");
+    audioconvert = gst_element_factory_make("audioconvert", "audioconvert");
+    voaacenc = gst_element_factory_make("voaacenc", "voaacenc");
+    mpegtsmux = gst_element_factory_make("mpegtsmux", "mpegtsmux");
     file_sink = gst_element_factory_make ("filesink", "file_sink");
 
     //check for null objects
-    if (!pipeline || !source || !hlsdemux || !decodebin || !queue1 || !queue2 || !autovideosink  || !autoaudiosink || !file_sink) {
+    if (!pipeline || !source || !decodebin || !queue1  || !videoconvert  || !x264enc || !audioconvert || !voaacenc || !mpegtsmux || !file_sink) {
     // if (!pipeline || !source || !file_sink) {
         cout << "not all elements created: pipeline"<<endl;
         return -1;
@@ -113,30 +114,49 @@ int main(int argc, char *argv[]) {
     g_object_set(G_OBJECT (source), "location", argv[1], NULL);
     cout << "==>Set video source." << endl;
 
+    g_object_set(G_OBJECT (file_sink), "location", "test1.ts", NULL);
+
     bus = gst_pipeline_get_bus(GST_PIPELINE (pipeline));
     gst_object_unref(bus);
 
     //add all elements together
-    gst_bin_add_many(GST_BIN(pipeline), source, hlsdemux, decodebin, queue1, queue2, autovideosink, autoaudiosink, NULL);
+    gst_bin_add_many(GST_BIN(pipeline), source, decodebin, videoconvert, queue1, x264enc, audioconvert, voaacenc, mpegtsmux, file_sink, NULL);
 
-    // gst-launch-1.0 -v souphttpsrc location=<HLS_URL> ! hlsdemux ! decodebin name=decoder ! queue ! autovideosink decoder. ! queue ! autoaudiosink
+    // gst-launch-1.0 --gst-debug=3 mpegtsmux name=mux ! filesink location=mariamma.ts souphttpsrc location=<> ! \
+    // decodebin name=decode  ! videoconvert  ! queue ! x264enc ! mux. decode. ! audioconvert ! voaacenc ! mux.
 
-    if (!gst_element_link_many(source, hlsdemux,  NULL)) {
-        g_error("could not link source with hlsdemux");
+    if (!gst_element_link_many(source, decodebin,  NULL)) {
+        g_error("could not link source with decodebin");
     }
 
 
-    if (!gst_element_link_many(queue1, autovideosink, NULL)) {
-        g_error("could not link queue1, autovideosink !!");
+    if (!gst_element_link_many(videoconvert, queue1, NULL)) {
+        g_error("could not link videoconvert, queue1 !!");
     }
 
-    if (!gst_element_link_many(queue2, autoaudiosink, NULL)) {
+    if (!gst_element_link_many(queue1, x264enc, NULL)) {
         g_error ("could not link queue2, autoaudiosink");
     }
 
-    g_signal_connect(hlsdemux, "pad-added", G_CALLBACK(on_pad_added), decodebin);
-    g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), queue1);
-    g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), queue2);
+    if (!gst_element_link_many(audioconvert, voaacenc, NULL)) {
+        g_error ("could not link audioconvert, voaacenc");
+    }
+
+    //mux pipes
+    if (!gst_element_link_many(mpegtsmux, file_sink, NULL)) {
+        g_error ("could not link mpegtsmux, file_sink");
+    }
+
+    if (!gst_element_link_many(voaacenc, mpegtsmux, NULL)) {
+        g_error ("could not link voaacenc, mpegtsmux");
+    }
+
+    if (!gst_element_link_many(x264enc, mpegtsmux, NULL)) {
+        g_error ("could not link x264enc, mpegtsmux");
+    }
+    // g_signal_connect(hlsdemux, "pad-added", G_CALLBACK(on_pad_added), decodebin);
+    g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), videoconvert);
+    g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_added), audioconvert);
 
 
 

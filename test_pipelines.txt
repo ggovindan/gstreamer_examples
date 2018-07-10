@@ -24,4 +24,13 @@ gst-launch-1.0 -v souphttpsrc location=<HLS_URL> ! hlsdemux ! decodebin name=dec
 
 # step 2.. save the video
 
-# , 175272, 175278, 175290, 195926
+gst-launch-1.0 -v  mpegtsmux ! filesink location=dipoza.ts souphttpsrc location=<> ! \
+  hlsdemux ! decodebin name=decoder ! queue name=q1 ! videoconvert ! queue name=q2 ! x264enc name=encoder ! \
+   mux.  decoder. ! queue name=q3 ! audioconvert ! queue name=q4 ! avenc_aac ! mux.
+
+# step3.. save video and audio
+WORKING!!!!!!!!
+gst-launch-1.0 --gst-debug=3 mpegtsmux name=mux ! filesink location=mariamma.ts souphttpsrc location=<> ! \
+ decodebin name=decode  ! videoconvert  ! queue ! x264enc ! mux. decode. ! audioconvert ! voaacenc ! mux.
+
+gst-launch-1.0 --gst-debug=3 mp4mux
